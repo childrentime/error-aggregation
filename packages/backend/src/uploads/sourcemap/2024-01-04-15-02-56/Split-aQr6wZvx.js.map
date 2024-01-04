@@ -1,0 +1,1 @@
+{"version":3,"file":"Split-aQr6wZvx.js","sources":["../../src/Split.tsx"],"sourcesContent":["\n\n\n\nconst Split = () => <div>Split</div>\n\nexport default Split;"],"names":["Split","jsx"],"mappings":"wCAIA,MAAMA,EAAQ,IAAOC,EAAA,IAAA,MAAA,CAAI,SAAK,OAAA,CAAA"}
