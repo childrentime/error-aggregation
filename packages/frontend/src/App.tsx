@@ -9,21 +9,49 @@ function App() {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
-    setInterval(() => {
-      throw new Error('custom error')
-    }, 10);
-    setInterval(() => {
-      Promise.reject(new Error("Promise Failed!"))
-    }, 100)
-    setInterval(() => {
-      Promise.reject(new Error("Promise Failed! 1"))
-    }, 1000)
-    setInterval(() => {
-      throw new Error('custom error 1')
-    }, 5000)
-    setInterval(() => {
-      throw new Error('custom error 2')
-    }, 10000)
+    // setTimeout(() => {
+    //   throw new Error('custom error')
+    // }, 10);
+    // setTimeout(() => {
+    //   Promise.reject(new Error("Promise Failed!"))
+    // }, 100)
+    // setTimeout(() => {
+    //   Promise.reject(new Error("Promise Failed! 1"))
+    // }, 1000)
+    // setTimeout(() => {
+    //   throw new Error('custom error 1')
+    // }, 5000)
+    // setTimeout(() => {
+    //   throw new Error('custom error 2')
+    // }, 10000)
+    // console.log('error', new Error('rqwrqwe'));
+
+    function foo()
+    {
+    return Promise.reject('Hello, Fundebug!');
+    }
+      
+    const r = foo();
+      
+    setTimeout(() =>
+    {
+        r.catch(e =>{});
+    }, 1000);
+
+
+
+
+    // // Promise.reject(new Error("Promise Failed! 1"));
+    // // Promise.reject(new Error("Promise Failed! 1")).catch(error => {})
+    // setTimeout(() => {
+    //   a.b.c;
+    // }, 0)
+    // // a.b.c;
+    // fetch('/api/dads');
+    const image = document.createElement('script');
+    image.src = "http://dassdas/dassd.js";
+    document.body.appendChild(image)
+    a.b.c;
   }, [])
 
   return (

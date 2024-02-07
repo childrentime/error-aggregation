@@ -14,9 +14,9 @@
 
 7. 前端： 写一个vite插件，在build的时候上传sourcemap到内网
 
-8. 前端： 
+8. 前端： 写一个vite插件，在build的时候根据 git commit hash注入到html中
 
-8. 后端： 接收sourcemap并且按照日期存储
+8. 后端： 接收sourcemap并且按照commit hash存储最多10份sourcemap
 
 9. 后端： 解析错误堆栈并且返回相关上下文
 

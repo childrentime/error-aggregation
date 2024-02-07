@@ -1,12 +1,36 @@
 import express from 'express';
 import dotenv from "@jsdotenv/core";
 import path from 'path';
-import moment from 'moment'
 import fs from 'fs'
 import fileload from 'express-fileupload'
 import { IPosition, getOriginalPosition } from './utils/stack-parser';
 import crypto from 'crypto';
 import { InfluxDB, Point } from '@influxdata/influxdb-client'
+import {verbose} from 'sqlite3'
+import util from 'node:util';
+
+const sqlite3 = verbose();
+const db = new sqlite3.Database('./commit_id.db', sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
+  if (err) {
+    console.error(err.message);
+  }
+  console.log('Connected to the commit id database.');
+});
+
+db.run(`CREATE TABLE IF NOT EXISTS commit_id (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  commit_id TEXT NOT NULL,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)`, (err) => {
+if (err) {
+  console.error(err.message);
+}
+});
+
+const dbRun = util.promisify(db.run.bind(db));
+const dbGet = util.promisify(db.get.bind(db));
+
+
 
 const envPath = path.resolve(__dirname + "/../.env");
 dotenv.load([envPath]);
@@ -31,6 +55,7 @@ interface IStack {
   mode: string;
   name: string;
   message: string;
+  version: string;
   stack: {
     url: string;
     func: string;
@@ -44,7 +69,7 @@ app.get('/reportError', (req, res) => {
   const error = JSON.parse(atob(message)) as IStack;
 
   const stackString = error.stack.map(stackFrame => `${stackFrame.url}:${stackFrame.func}:${stackFrame.line}:${stackFrame.column}`).join('|');
-  const errorString = `${error.mode}:${error.name}:${error.message}:${stackString}`;
+  const errorString = `${error.mode}:${error.name}:${error.message}:${stackString}:${error.version}`;
   const hash = crypto.createHash('SHA-256').update(errorString).digest('hex');
   console.log('error', error.message)
 
@@ -52,6 +77,7 @@ app.get('/reportError', (req, res) => {
     .tag('mode', error.mode)
     .tag('name', error.name)
     .tag('message', error.message)
+    .tag('version',error.version)
     .stringField('hash', hash)
     .stringField('errorData', JSON.stringify(error));
   writeClient.writePoint(point);
@@ -61,9 +87,8 @@ app.get('/reportError', (req, res) => {
 });
 
 // 根据时间段查询所有错误 错误数量以 second 和 hash 为纬度聚合
-app.get('/vitualError', (req, res) => {
+app.get('/vitualError', async (req, res) => {
   const { startTime, endTime } = req.query;
-
   const fluxQuery = `
   import "date"
 
@@ -93,9 +118,11 @@ app.get('/vitualError', (req, res) => {
       console.error(error);
       res.status(500).send(error);
     },
-    complete() {
+    async complete() {
+      const row = await dbGet(`SELECT commit_id FROM commit_id ORDER BY timestamp DESC LIMIT 1`);
       res.json({
-        data: hashMap
+        data: hashMap,
+        version: row.commit_id || ''
       });
     },
   });
@@ -104,10 +131,10 @@ app.get('/vitualError', (req, res) => {
 // 定时任务 一段时间内错误数量超过阈值发送邮件告警
 
 // 设置时间数量阈值
-
-app.post('/sourcemap', (req, res) => {
-  const date = moment().format('YYYY-MM-DD-HH-mm-ss');
-  const dir = path.join(__dirname, 'uploads/sourcemap', date);
+app.post('/sourcemap', async (req, res) => {
+  const versionId = req.body.versionId;
+  await dbRun(`INSERT INTO commit_id(commit_id) VALUES(?)`, versionId);
+  const dir = path.join(__dirname, 'uploads/sourcemap', versionId);
   fs.mkdirSync(dir, { recursive: true });
   if (req.files) {
     const files = Array.isArray(req.files.files) ? req.files.files : [req.files.files]
@@ -127,7 +154,7 @@ app.post('/parseError', async (req, res) => {
     |> range(start: time(v: ${startTime}), stop: time(v: ${endTime}))
     |> filter(fn: (r) => r["_measurement"] == "errors")
     |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-    |> filter(fn: (r) => r["hash"] == "66a613414d08bc0bd6e02accab4e45e88cc6440450df86581b2e03fbe259872a")
+    |> filter(fn: (r) => r["hash"] == "${hash}")
     |> limit(n:1)
   `
   let collect;

@@ -16,7 +16,8 @@ const uploadSourceMapPlugin = (): Plugin => {
           form.append('files', fileFromPathSync(filePath));
         }
       }
-      console.log(Array.from(form));
+      form.append('versionId',global.global.versionId)
+      console.log(Array.from(form),global.versionId);
        /** need nodejs >= 18 */
        fetch('http://localhost:1010/sourcemap', {
         body: form, method: 'POST',

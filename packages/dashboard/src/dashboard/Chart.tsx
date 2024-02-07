@@ -24,7 +24,7 @@ const colors = [
 
 export default function Chart() {
   const theme = useTheme();
-  const { data } = useSWR<{ data: IData }>('/api/vitualError?endTime=2024-01-04T18:04:00.207Z&startTime=2024-01-04T01:04:00.207Z');
+  const { data } = useSWR<{ data: IData, version: string }>('/api/vitualError?endTime=2024-01-04T18:04:00.207Z&startTime=2024-01-04T01:04:00.207Z');
 
   if (!data) {
     return null;
@@ -37,7 +37,8 @@ export default function Chart() {
     return a.second - b.second;
   });
   const hashes = [...new Set(rechartsData.map(item => item.hash))];
-  console.log('data', rechartsData)
+  console.log('data', rechartsData, data.version)
+
 
 
   return (
@@ -62,7 +63,7 @@ export default function Chart() {
           />
           <YAxis style={theme.typography.body2} stroke={theme.palette.text.secondary} />
           <Tooltip offset={100} labelFormatter={(label => {
-             return dayjs.unix(label).format('YYYY-MM-DD HH:mm:ss')
+            return dayjs.unix(label).format('YYYY-MM-DD HH:mm:ss')
           })} />
           <Legend />
           {hashes.map((hash, index) => {
